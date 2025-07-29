@@ -111,7 +111,7 @@ Example output:
 ```
 Found 3 deployment(s):
 
-ID         App Name             Image                          Replicas Status     Created         
+ID         App Name             Image                          Replicas Status     Created
 ----------  -------------------- ------------------------------ -------- ---------- ----------------
 abc12345..  my-nginx             nginx:latest                   2        Running    2024-01-15 14:30
 def67890..  my-api               mycompany/api:v2.1             1        Running    2024-01-15 13:45
@@ -120,10 +120,11 @@ ghi24680..  my-worker            mycompany/worker:latest        3        Pending
 
 ### `coderun status`
 
-Get detailed status of a deployment by application name.
+Get detailed status of a deployment by application ID.
 
 ```bash
-coderun status my-nginx
+# Get status by ID
+coderun status abc12345def67890
 ```
 
 ### `coderun delete`
@@ -196,7 +197,7 @@ coderun deploy mycompany/webapp:v2.0 \
   --name=webapp-prod
 
 # 3. Verify deployment
-coderun status webapp-prod
+coderun status abc12345def67890
 ```
 
 ### Deployment management
@@ -206,7 +207,7 @@ coderun status webapp-prod
 coderun list
 
 # View details of specific deployment
-coderun status my-app
+coderun status abc12345def67890
 
 # Delete old deployment
 coderun delete abc12345def67890
