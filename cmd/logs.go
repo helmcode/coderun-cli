@@ -24,7 +24,7 @@ Shows the most recent logs from all pods in the deployment.
 
 Examples:
   coderun logs abc12345-6789-def0-1234-567890abcdef
-  coderun logs abc12345-6789-def0-1234-567890abcdef --lines=200`,
+  coderun logs abc12345-6789-def0-1234-567890abcdef --lines 200`,
 	Args: cobra.ExactArgs(1),
 	Run:  runLogs,
 }

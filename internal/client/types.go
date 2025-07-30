@@ -26,6 +26,7 @@ type DeploymentCreate struct {
 	CPURequest      string            `json:"cpu_request,omitempty"`
 	MemoryRequest   string            `json:"memory_request,omitempty"`
 	HTTPPort        *int              `json:"http_port,omitempty"`
+	TCPPort         *int              `json:"tcp_port,omitempty"`
 	EnvironmentVars map[string]string `json:"environment_vars,omitempty"`
 }
 
@@ -41,10 +42,14 @@ type DeploymentResponse struct {
 	CPURequest      string            `json:"cpu_request"`
 	MemoryRequest   string            `json:"memory_request"`
 	HTTPPort        *int              `json:"http_port"`
+	TCPPort         *int              `json:"tcp_port"`
+	TCPNodePort     *int              `json:"tcp_node_port"`
 	EnvironmentVars map[string]string `json:"environment_vars"`
 	Status          string            `json:"status"`
 	CreatedAt       time.Time         `json:"created_at"`
 	UpdatedAt       *time.Time        `json:"updated_at"`
+	URL             *string           `json:"url"`
+	TCPConnection   *string           `json:"tcp_connection"`
 }
 
 // DeploymentList represents a list of deployments
@@ -61,6 +66,7 @@ type DeploymentStatus struct {
 	ReplicasDesired int                 `json:"replicas_desired"`
 	Pods            []map[string]string `json:"pods"`
 	URL             *string             `json:"url"`
+	TCPConnection   *string             `json:"tcp_connection"`
 	URLNote         *string             `json:"url_note,omitempty"`
 	TLSCertificate  *TLSCertificateInfo `json:"tls_certificate,omitempty"`
 }

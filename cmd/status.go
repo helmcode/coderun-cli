@@ -80,6 +80,10 @@ func runStatus(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	if status.TCPConnection != nil {
+		fmt.Printf("TCP Connection: %s\n", *status.TCPConnection)
+	}
+
 	if len(status.Pods) > 0 {
 		fmt.Printf("\n� Pods:\n")
 		for i, pod := range status.Pods {

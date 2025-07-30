@@ -13,7 +13,7 @@ in a Kubernetes cluster with ease. Deploy your applications with simple commands
 
 Examples:
   coderun login                                    # Authenticate with your account
-  coderun deploy nginx:latest --replicas=2        # Deploy nginx with 2 replicas
+  coderun deploy nginx:latest --replicas 2        # Deploy nginx with 2 replicas
   coderun list                                     # List all your deployments
   coderun status <DEPLOYMENT_ID>                  # Check status by deployment ID`,
 }
