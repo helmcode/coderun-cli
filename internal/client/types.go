@@ -18,16 +18,18 @@ type LoginResponse struct {
 
 // DeploymentCreate represents a deployment creation request
 type DeploymentCreate struct {
-	AppName         string            `json:"app_name"`
-	Image           string            `json:"image"`
-	Replicas        int               `json:"replicas"`
-	CPULimit        string            `json:"cpu_limit,omitempty"`
-	MemoryLimit     string            `json:"memory_limit,omitempty"`
-	CPURequest      string            `json:"cpu_request,omitempty"`
-	MemoryRequest   string            `json:"memory_request,omitempty"`
-	HTTPPort        *int              `json:"http_port,omitempty"`
-	TCPPort         *int              `json:"tcp_port,omitempty"`
-	EnvironmentVars map[string]string `json:"environment_vars,omitempty"`
+	AppName                   string            `json:"app_name"`
+	Image                     string            `json:"image"`
+	Replicas                  int               `json:"replicas"`
+	CPULimit                  string            `json:"cpu_limit,omitempty"`
+	MemoryLimit               string            `json:"memory_limit,omitempty"`
+	CPURequest                string            `json:"cpu_request,omitempty"`
+	MemoryRequest             string            `json:"memory_request,omitempty"`
+	HTTPPort                  *int              `json:"http_port,omitempty"`
+	TCPPort                   *int              `json:"tcp_port,omitempty"`
+	EnvironmentVars           map[string]string `json:"environment_vars,omitempty"`
+	PersistentVolumeSize      string            `json:"persistent_volume_size,omitempty"`
+	PersistentVolumeMountPath string            `json:"persistent_volume_mount_path,omitempty"`
 }
 
 // DeploymentResponse represents a deployment response

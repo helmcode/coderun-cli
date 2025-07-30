@@ -23,19 +23,26 @@ Examples:
   coderun deploy my-app:latest --name web-app --http-port 8080 --env-file .env
   coderun deploy redis:latest --name my-redis --tcp-port 6379
   coderun deploy postgres:latest --name my-db --tcp-port 5432 --env-file database.env
-  coderun deploy my-app:latest --name prod-app --replicas 2 --cpu 200m --memory 512Mi --http-port 3000 --env-file production.env`,
+  coderun deploy my-app:latest --name prod-app --replicas 2 --cpu 200m --memory 512Mi --http-port 3000 --env-file production.env
+  
+  # With persistent storage (automatically forces replicas to 1):
+  coderun deploy postgres:15 --name my-postgres --tcp-port 5432 --storage-size 5Gi --storage-path /var/lib/postgresql/data
+  coderun deploy mysql:8 --name my-mysql --tcp-port 3306 --storage-size 10Gi --storage-path /var/lib/mysql
+  coderun deploy nginx:latest --name web-server --http-port 80 --storage-size 1Gi --storage-path /usr/share/nginx/html`,
 	Args: cobra.ExactArgs(1),
 	Run:  runDeploy,
 }
 
 var (
-	replicas int
-	cpu      string
-	memory   string
-	httpPort int
-	tcpPort  int
-	envFile  string
-	appName  string
+	replicas                  int
+	cpu                       string
+	memory                    string
+	httpPort                  int
+	tcpPort                   int
+	envFile                   string
+	appName                   string
+	persistentVolumeSize      string
+	persistentVolumeMountPath string
 )
 
 func init() {
@@ -49,6 +56,10 @@ func init() {
 	deployCmd.Flags().IntVar(&tcpPort, "tcp-port", 0, "TCP port to expose")
 	deployCmd.Flags().StringVar(&envFile, "env-file", "", "Path to environment file")
 	deployCmd.Flags().StringVar(&appName, "name", "", "Application name (required, 3-30 chars, lowercase letters/numbers/hyphens only)")
+
+	// Persistent storage flags
+	deployCmd.Flags().StringVar(&persistentVolumeSize, "storage-size", "", "Size of persistent volume (e.g., '1Gi', '500Mi', '10Gi')")
+	deployCmd.Flags().StringVar(&persistentVolumeMountPath, "storage-path", "", "Path where to mount the volume (e.g., '/data', '/var/lib/mysql')")
 }
 
 // parseValidationError tries to parse backend validation errors and return user-friendly messages
@@ -89,6 +100,23 @@ func parseValidationError(errorMsg string) string {
 	// Image validation errors
 	if strings.Contains(lowerError, "image") && strings.Contains(lowerError, "at least 1") {
 		return "Image name cannot be empty"
+	}
+
+	// Persistent storage validation errors
+	if strings.Contains(lowerError, "persistent_volume_size") || strings.Contains(lowerError, "storage") {
+		if strings.Contains(lowerError, "together") || strings.Contains(lowerError, "provided together") {
+			return "When using persistent storage, both --storage-size and --storage-path are required"
+		}
+		if strings.Contains(lowerError, "format") || strings.Contains(lowerError, "10gi") || strings.Contains(lowerError, "500mi") {
+			return "Storage size must be in format like '1Gi', '500Mi', '10Gi'"
+		}
+		return "Invalid storage configuration. Use --storage-size and --storage-path together"
+	}
+	if strings.Contains(lowerError, "persistent_volume_mount_path") || strings.Contains(lowerError, "mount") {
+		if strings.Contains(lowerError, "absolute") || strings.Contains(lowerError, "starting with") {
+			return "Storage path must be an absolute path starting with '/' (e.g., '/data', '/var/lib/mysql')"
+		}
+		return "Invalid storage path. Must be absolute path like '/data' or '/var/lib/mysql'"
 	}
 
 	// Generic validation error
@@ -173,6 +201,38 @@ func runDeploy(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	// Validate persistent storage flags
+	if persistentVolumeSize != "" || persistentVolumeMountPath != "" {
+		// Both flags must be provided together
+		if persistentVolumeSize == "" {
+			fmt.Println("When using persistent storage, both --storage-size and --storage-path are required")
+			os.Exit(1)
+		}
+		if persistentVolumeMountPath == "" {
+			fmt.Println("When using persistent storage, both --storage-size and --storage-path are required")
+			os.Exit(1)
+		}
+
+		// Validate storage size format
+		matched, _ := regexp.MatchString(`^\d+[MGT]i$`, persistentVolumeSize)
+		if !matched {
+			fmt.Println("Storage size must be in format like '1Gi', '500Mi', '10Gi'")
+			os.Exit(1)
+		}
+
+		// Validate mount path format (must be absolute path)
+		if !strings.HasPrefix(persistentVolumeMountPath, "/") {
+			fmt.Println("Storage path must be an absolute path starting with '/' (e.g., '/data', '/var/lib/mysql')")
+			os.Exit(1)
+		}
+
+		// Force replicas to 1 when using persistent storage
+		if replicas > 1 {
+			fmt.Printf("Warning: Persistent storage requested, forcing replicas to 1 (was %d)\n", replicas)
+			replicas = 1
+		}
+	}
+
 	// Parse environment file if provided
 	var envVars map[string]string
 	if envFile != "" {
@@ -192,6 +252,12 @@ func runDeploy(cmd *cobra.Command, args []string) {
 		CPULimit:        cpu,
 		MemoryLimit:     memory,
 		EnvironmentVars: envVars,
+	}
+
+	// Add persistent storage if specified
+	if persistentVolumeSize != "" && persistentVolumeMountPath != "" {
+		deployReq.PersistentVolumeSize = persistentVolumeSize
+		deployReq.PersistentVolumeMountPath = persistentVolumeMountPath
 	}
 
 	// Add HTTP port if specified
