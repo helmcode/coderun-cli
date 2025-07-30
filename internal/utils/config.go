@@ -7,10 +7,24 @@ import (
 	"path/filepath"
 )
 
+// Default API URL (can be overridden at build time)
+var DefaultAPIURL = "http://localhost:8000"
+
 // Config represents the CLI configuration
 type Config struct {
 	BaseURL     string `json:"base_url"`
 	AccessToken string `json:"access_token,omitempty"`
+}
+
+// GetDefaultAPIURL returns the default API URL, checking environment variables first
+func GetDefaultAPIURL() string {
+	// Check environment variable first
+	if url := os.Getenv("CODERUN_API_URL"); url != "" {
+		return url
+	}
+
+	// Return the default URL (may be overridden at build time)
+	return DefaultAPIURL
 }
 
 // GetConfigPath returns the path to the configuration file
@@ -36,7 +50,7 @@ func LoadConfig() (*Config, error) {
 	// Return default config if file doesn't exist
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return &Config{
-			BaseURL: "http://localhost:8000",
+			BaseURL: GetDefaultAPIURL(),
 		}, nil
 	}
 

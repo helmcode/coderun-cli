@@ -1,29 +1,17 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
-// Version variables set from main
-var (
-	buildVersion = "dev"
-	buildCommit  = "none"
-	buildDate    = "unknown"
-)
+// Version variable set from main
+var buildVersion = "dev"
 
 // SetVersionInfo configures version information from main
-func SetVersionInfo(version, commit, date string) {
+func SetVersionInfo(version string) {
 	buildVersion = version
-	buildCommit = commit
-	buildDate = date
-
-	// Update version in rootCmd
-	rootCmd.Version = fmt.Sprintf("%s (commit: %s, built: %s)", version, commit, date)
-}
-
-// rootCmd represents the base command when called without any subcommands
+	rootCmd.Version = version
+} // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "coderun",
 	Short: "CodeRun Container-as-a-Service CLI",
