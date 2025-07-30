@@ -34,24 +34,26 @@ type DeploymentCreate struct {
 
 // DeploymentResponse represents a deployment response
 type DeploymentResponse struct {
-	ID              string            `json:"id"`
-	ClientID        string            `json:"client_id"`
-	AppName         string            `json:"app_name"`
-	Image           string            `json:"image"`
-	Replicas        int               `json:"replicas"`
-	CPULimit        string            `json:"cpu_limit"`
-	MemoryLimit     string            `json:"memory_limit"`
-	CPURequest      string            `json:"cpu_request"`
-	MemoryRequest   string            `json:"memory_request"`
-	HTTPPort        *int              `json:"http_port"`
-	TCPPort         *int              `json:"tcp_port"`
-	TCPNodePort     *int              `json:"tcp_node_port"`
-	EnvironmentVars map[string]string `json:"environment_vars"`
-	Status          string            `json:"status"`
-	CreatedAt       time.Time         `json:"created_at"`
-	UpdatedAt       *time.Time        `json:"updated_at"`
-	URL             *string           `json:"url"`
-	TCPConnection   *string           `json:"tcp_connection"`
+	ID                        string            `json:"id"`
+	ClientID                  string            `json:"client_id"`
+	AppName                   string            `json:"app_name"`
+	Image                     string            `json:"image"`
+	Replicas                  int               `json:"replicas"`
+	CPULimit                  string            `json:"cpu_limit"`
+	MemoryLimit               string            `json:"memory_limit"`
+	CPURequest                string            `json:"cpu_request"`
+	MemoryRequest             string            `json:"memory_request"`
+	HTTPPort                  *int              `json:"http_port"`
+	TCPPort                   *int              `json:"tcp_port"`
+	TCPNodePort               *int              `json:"tcp_node_port"`
+	EnvironmentVars           map[string]string `json:"environment_vars"`
+	PersistentVolumeSize      string            `json:"persistent_volume_size,omitempty"`
+	PersistentVolumeMountPath string            `json:"persistent_volume_mount_path,omitempty"`
+	Status                    string            `json:"status"`
+	CreatedAt                 time.Time         `json:"created_at"`
+	UpdatedAt                 *time.Time        `json:"updated_at"`
+	URL                       *string           `json:"url"`
+	TCPConnection             *string           `json:"tcp_connection"`
 }
 
 // DeploymentList represents a list of deployments
@@ -62,15 +64,17 @@ type DeploymentList struct {
 
 // DeploymentStatus represents deployment status details
 type DeploymentStatus struct {
-	AppName         string              `json:"app_name"`
-	Status          string              `json:"status"`
-	ReplicasReady   int                 `json:"replicas_ready"`
-	ReplicasDesired int                 `json:"replicas_desired"`
-	Pods            []map[string]string `json:"pods"`
-	URL             *string             `json:"url"`
-	TCPConnection   *string             `json:"tcp_connection"`
-	URLNote         *string             `json:"url_note,omitempty"`
-	TLSCertificate  *TLSCertificateInfo `json:"tls_certificate,omitempty"`
+	AppName                   string              `json:"app_name"`
+	Status                    string              `json:"status"`
+	ReplicasReady             int                 `json:"replicas_ready"`
+	ReplicasDesired           int                 `json:"replicas_desired"`
+	Pods                      []map[string]string `json:"pods"`
+	URL                       *string             `json:"url"`
+	TCPConnection             *string             `json:"tcp_connection"`
+	URLNote                   *string             `json:"url_note,omitempty"`
+	TLSCertificate            *TLSCertificateInfo `json:"tls_certificate,omitempty"`
+	PersistentVolumeSize      string              `json:"persistent_volume_size,omitempty"`
+	PersistentVolumeMountPath string              `json:"persistent_volume_mount_path,omitempty"`
 }
 
 // TLSCertificateInfo represents TLS certificate status

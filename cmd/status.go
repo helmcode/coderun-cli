@@ -84,6 +84,13 @@ func runStatus(cmd *cobra.Command, args []string) {
 		fmt.Printf("TCP Connection: %s\n", *status.TCPConnection)
 	}
 
+	// Show persistent storage information if configured
+	if status.PersistentVolumeSize != "" && status.PersistentVolumeMountPath != "" {
+		fmt.Printf("💾 Persistent Storage:\n")
+		fmt.Printf("    Size: %s\n", status.PersistentVolumeSize)
+		fmt.Printf("    Mount Path: %s\n", status.PersistentVolumeMountPath)
+	}
+
 	if len(status.Pods) > 0 {
 		fmt.Printf("\n� Pods:\n")
 		for i, pod := range status.Pods {
