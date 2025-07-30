@@ -1,0 +1,172 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Operating systems and architectures to compile
+        include:
+          - os: linux
+            arch: amd64
+            goos: linux
+            goarch: amd64
+          - os: linux
+            arch: arm64
+            goos: linux
+            goarch: arm64
+          - os: darwin
+            arch: amd64
+            goos: darwin
+            goarch: amd64
+          - os: darwin
+            arch: arm64
+            goos: darwin
+            goarch: arm64
+          - os: windows
+            arch: amd64
+            goos: windows
+            goarch: amd64
+          - os: windows
+            arch: arm64
+            goos: windows
+            goarch: arm64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Get version from tag
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+        CGO_ENABLED: 0
+      run: |
+        # Create output directory
+        mkdir -p dist
+        
+        # Define binary name
+        if [ "${{ matrix.goos }}" = "windows" ]; then
+          BINARY_NAME="coderun-${{ matrix.os }}-${{ matrix.arch }}.exe"
+        else
+          BINARY_NAME="coderun-${{ matrix.os }}-${{ matrix.arch }}"
+        fi
+        
+        # Compile
+        go build -ldflags="-s -w -X 'main.version=${{ env.VERSION }}'" -o "dist/${BINARY_NAME}" .
+        
+        # Verify file was created
+        ls -la dist/
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: coderun-${{ matrix.os }}-${{ matrix.arch }}
+        path: dist/
+
+  create-release:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: dist/
+
+    - name: Get version from tag
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+    - name: Prepare release files
+      run: |
+        # Create final directory
+        mkdir -p release
+        
+        # Move all binaries to release directory
+        find dist/ -name "coderun-*" -type f -exec cp {} release/ \;
+        
+        # List files for verification
+        ls -la release/
+
+    - name: Generate checksums
+      run: |
+        cd release
+        sha256sum * > checksums.txt
+        cat checksums.txt
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.VERSION }}
+        name: Release ${{ env.VERSION }}
+        body: |
+          ## 🎉 CodeRun CLI ${{ env.VERSION }}
+          
+          ### 📦 Installation
+          
+          #### Linux (AMD64)
+          ```bash
+          curl -L https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION }}/coderun-linux-amd64 -o coderun
+          chmod +x coderun
+          sudo mv coderun /usr/local/bin/
+          ```
+          
+          #### Linux (ARM64)
+          ```bash
+          curl -L https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION }}/coderun-linux-arm64 -o coderun
+          chmod +x coderun
+          sudo mv coderun /usr/local/bin/
+          ```
+          
+          #### macOS (Intel)
+          ```bash
+          curl -L https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION }}/coderun-darwin-amd64 -o coderun
+          chmod +x coderun
+          sudo mv coderun /usr/local/bin/
+          ```
+          
+          #### macOS (Apple Silicon)
+          ```bash
+          curl -L https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION }}/coderun-darwin-arm64 -o coderun
+          chmod +x coderun
+          sudo mv coderun /usr/local/bin/
+          ```
+          
+          #### Windows (AMD64)
+          Download `coderun-windows-amd64.exe` and rename it to `coderun.exe`
+          
+          #### Windows (ARM64)
+          Download `coderun-windows-arm64.exe` and rename it to `coderun.exe`
+          
+          ### ✅ Installation Verification
+          ```bash
+          coderun --version
+          ```
+          
+          ### 🔒 Integrity Verification
+          You can verify file integrity using `checksums.txt`
+          
+        files: |
+          release/*
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

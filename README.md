@@ -1,275 +1,237 @@
 # CodeRun CLI
 
-CodeRun CLI is a command-line tool for deploying and managing Docker containers on the CodeRun platform.
+CodeRun CLI is a command-line tool that allows you to deploy and manage Docker containers on a Helmcode Kubernetes platform easily.
 
-## Installation
+## 🚀 Installation
 
-### Build from source code
+### Quick Installation (Recommended)
 
+#### Linux (AMD64)
 ```bash
-git clone <repository-url>
-cd cli
-go build -o coderun .
-```
-
-### Move binary to your PATH (optional)
-
-```bash
+curl -L https://github.com/helmcode/coderun-cli/releases/latest/download/coderun-linux-amd64 -o coderun
+chmod +x coderun
 sudo mv coderun /usr/local/bin/
 ```
 
-## Configuration
+#### Linux (ARM64)
+```bash
+curl -L https://github.com/helmcode/coderun-cli/releases/latest/download/coderun-linux-arm64 -o coderun
+chmod +x coderun
+sudo mv coderun /usr/local/bin/
+```
 
-### 1. Login
+#### macOS (Intel)
+```bash
+curl -L https://github.com/helmcode/coderun-cli/releases/latest/download/coderun-darwin-amd64 -o coderun
+chmod +x coderun
+sudo mv coderun /usr/local/bin/
+```
 
-First you need to authenticate with your CodeRun account:
+#### macOS (Apple Silicon)
+```bash
+curl -L https://github.com/helmcode/coderun-cli/releases/latest/download/coderun-darwin-arm64 -o coderun
+chmod +x coderun
+sudo mv coderun /usr/local/bin/
+```
+
+#### Windows
+1. Download the appropriate file from [Releases](https://github.com/helmcode/coderun-cli/releases/latest)
+2. Rename it to `coderun.exe`
+3. Place it in your PATH
+
+### Build from Source
 
 ```bash
-coderun login
-```
-
-You will be prompted for your email and password. The access token will be saved in `~/.coderun/config.json`.
-
-### 2. Configure API URL (optional)
-
-By default, the CLI uses `https://api.coderun.dev`. To use a local instance:
-
-```bash
-coderun --api-url http://localhost:8000 login
-```
-
-Or you can configure the environment variable:
-
-```bash
-export CODERUN_API_URL="http://localhost:8000"
-```
-
-## Available Commands
-
-### `coderun login`
-
-Authenticate with the CodeRun platform.
-
-```bash
-coderun login
-```
-
-### `coderun deploy`
-
-Deploy a Docker container.
-
-#### Basic options:
-
-```bash
-# Simple deployment
-coderun deploy nginx:latest
-
-# With specific replicas
-coderun deploy nginx:latest --replicas=3
-
-# With resource limits
-coderun deploy myapp:v1.0 --cpu=500m --memory=1Gi
-
-# With exposed HTTP port
-coderun deploy myapp:v1.0 --http-port=8080
-```
-
-#### Using environment files:
-
-```bash
-# Load environment variables from file
-coderun deploy myapp:v1.0 --env-file=production.env
-
-# Complete example
-coderun deploy myapp:v1.0 \
-  --replicas=2 \
-  --cpu=200m \
-  --memory=512Mi \
-  --http-port=3000 \
-  --env-file=.env \
-  --name=my-production-app
-```
-
-#### Parameters:
-
-- `--replicas`: Number of replicas (default: 1)
-- `--cpu`: CPU limit (example: `100m`, `0.5`, `1`)
-- `--memory`: Memory limit (example: `128Mi`, `1Gi`, `512Ki`) 
-- `--http-port`: HTTP port to expose
-- `--env-file`: Path to environment variables file
-- `--name`: Application name (optional, auto-generated)
-
-### `coderun list`
-
-List all deployments.
-
-```bash
-coderun list
-```
-
-Example output:
-```
-Found 3 deployment(s):
-
-ID         App Name             Image                          Replicas Status     Created
-----------  -------------------- ------------------------------ -------- ---------- ----------------
-abc12345..  my-nginx             nginx:latest                   2        Running    2024-01-15 14:30
-def67890..  my-api               mycompany/api:v2.1             1        Running    2024-01-15 13:45
-ghi24680..  my-worker            mycompany/worker:latest        3        Pending    2024-01-15 14:25
-```
-
-### `coderun status`
-
-Get detailed status of a deployment by application ID.
-
-```bash
-# Get status by ID
-coderun status abc12345def67890
-```
-
-### `coderun delete`
-
-Delete a deployment by ID.
-
-```bash
-# Delete by specific ID
-coderun delete abc12345def67890
-
-# Using command combination
-coderun delete $(coderun list | grep my-old-app | awk '{print $1}')
-```
-
-## Environment file format
-
-The environment file must follow the `KEY=VALUE` format:
-
-```bash
-# example.env
-DATABASE_URL=postgresql://user:pass@localhost:5432/db
-API_KEY="secret-key-with-special-chars"
-DEBUG=true
-PORT=8080
-```
-
-### Rules:
-
-- One variable per line
-- Format: `KEY=VALUE`
-- Comments start with `#`
-- Empty lines are ignored
-- Values can be quoted (`"` or `'`)
-- No spaces around the `=`
-
-## Usage examples
-
-### Deploy a simple web application
-
-```bash
-# 1. Login
-coderun login
-
-# 2. Deploy nginx
-coderun deploy nginx:latest --replicas=2 --http-port=80
-
-# 3. Check status
-coderun list
-coderun status nginx
-```
-
-### Deploy an application with database
-
-```bash
-# 1. Create environment file
-cat > production.env << EOF
-DATABASE_URL=postgresql://user:pass@db:5432/myapp
-REDIS_URL=redis://redis:6379
-API_KEY=your-secret-key
-APP_ENV=production
-EOF
-
-# 2. Deploy the application
-coderun deploy mycompany/webapp:v2.0 \
-  --replicas=3 \
-  --cpu=500m \
-  --memory=1Gi \
-  --http-port=8080 \
-  --env-file=production.env \
-  --name=webapp-prod
-
-# 3. Verify deployment
-coderun status abc12345def67890
-```
-
-### Deployment management
-
-```bash
-# List all deployments
-coderun list
-
-# View details of specific deployment
-coderun status abc12345def67890
-
-# Delete old deployment
-coderun delete abc12345def67890
-```
-
-## Troubleshooting
-
-### Authentication error
-
-```bash
-Error: Authentication failed
-```
-
-**Solution**: Run `coderun login` to authenticate again.
-
-### Connection error
-
-```bash
-Error: Failed to connect to API
-```
-
-**Solution**: Verify API URL with `--api-url` or the `CODERUN_API_URL` environment variable.
-
-### Resource format error
-
-```bash
-Error: Invalid CPU format '1core' (examples: 100m, 0.5, 1)
-```
-
-**Solution**: Use valid formats:
-- CPU: `100m`, `0.5`, `1`, `2`
-- Memory: `128Mi`, `1Gi`, `512Ki`
-
-### Environment file error
-
-```bash
-Error: Invalid format at line 5: INVALID LINE (expected KEY=VALUE)
-```
-
-**Solution**: Verify each line follows the `KEY=VALUE` format.
-
-## Configuration files
-
-- **Config**: `~/.coderun/config.json`
-- **Token**: Stored in configuration file
-
-## Development
-
-### Build
-
-```bash
+git clone https://github.com/helmcode/coderun-cli.git
+cd coderun-cli
 go build -o coderun .
 ```
 
-### Run tests
+## 📋 Installation Verification
 
 ```bash
-go test ./...
+coderun --version
 ```
 
-### Add new commands
+## 🔧 Basic Usage
 
-1. Create file in `cmd/`
-2. Implement command with Cobra
-3. Register in `cmd/root.go`
+### 1. Authentication
+```bash
+coderun login
+```
+
+### 2. Deploy an Application
+
+#### Web Applications (HTTP)
+```bash
+# Basic deployment
+coderun deploy nginx:latest --name my-web-app --http-port 80
+
+# With custom resources
+coderun deploy my-app:v1.0 --name web-app --http-port 8080 --replicas 3 --cpu 500m --memory 1Gi
+
+# With environment variables
+coderun deploy my-app:latest --name prod-app --http-port 3000 --env-file .env
+```
+
+#### TCP Applications (Databases, etc.)
+```bash
+# Redis
+coderun deploy redis:latest --name my-redis --tcp-port 6379
+
+# PostgreSQL
+coderun deploy postgres:latest --name my-db --tcp-port 5432 --env-file database.env
+
+# Custom TCP application
+coderun deploy my-tcp-app:latest --name tcp-service --tcp-port 9000
+```
+
+### 3. Deployment Management
+
+#### List deployments
+```bash
+coderun list
+```
+
+#### View detailed status
+```bash
+coderun status <DEPLOYMENT_ID>
+```
+
+#### Delete deployment
+```bash
+coderun delete <DEPLOYMENT_ID>
+```
+
+## 📖 Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `login` | Authenticate with the platform |
+| `deploy` | Deploy an application |
+| `list` | List all deployments |
+| `status` | View detailed deployment status |
+| `delete` | Delete a deployment |
+
+## 🔗 Connection Types
+
+### HTTP/HTTPS
+- Web applications are automatically exposed with HTTPS
+- URL format: `https://app-name-id.helmcode.com`
+- Automatic TLS certificates
+
+### TCP
+- TCP applications are exposed on the LoadBalancer
+- Format: `app-name-id.helmcode.com:port`
+- Ideal for databases, TCP APIs, etc.
+
+## ⚙️ Configuration Options
+
+### Deploy Command Flags
+
+| Flag | Description | Example |
+|------|-------------|---------|
+| `--name` | Application name (required) | `--name my-app` |
+| `--replicas` | Number of replicas | `--replicas 3` |
+| `--cpu` | CPU limit | `--cpu 500m` |
+| `--memory` | Memory limit | `--memory 1Gi` |
+| `--http-port` | HTTP port to expose | `--http-port 8080` |
+| `--tcp-port` | TCP port to expose | `--tcp-port 5432` |
+| `--env-file` | Environment variables file | `--env-file .env` |
+
+### Environment File Format (.env)
+```bash
+DATABASE_URL=postgres://user:pass@host:5432/db
+API_KEY=your-secret-key
+DEBUG=true
+```
+
+## 🔍 Practical Examples
+
+### Deploy WordPress
+```bash
+coderun deploy wordpress:latest --name my-blog --http-port 80 --replicas 2
+```
+
+### Deploy Node.js API
+```bash
+coderun deploy my-api:v2.1 --name api-service --http-port 3000 --cpu 200m --memory 512Mi --env-file api.env
+```
+
+### Deploy Redis for Caching
+```bash
+coderun deploy redis:alpine --name cache --tcp-port 6379
+```
+
+### Deploy MongoDB
+```bash
+coderun deploy mongo:latest --name database --tcp-port 27017 --env-file mongo.env
+```
+
+## 🔒 Validations
+
+The CLI includes automatic validations for:
+- ✅ Application names (3-30 characters, lowercase, letters/numbers/hyphens)
+- ✅ Ports in valid range (1-65535)
+- ✅ HTTP/TCP mutual exclusion (only one allowed)
+- ✅ Resource format (CPU/memory)
+- ✅ Authentication verification
+
+## 🚦 Deployment States
+
+| State | Description |
+|-------|-------------|
+| `pending` | Deployment being created |
+| `running` | Application running correctly |
+| `failed` | Deployment error |
+| `stopped` | Application stopped |
+
+## 🐛 Troubleshooting
+
+### Error: "Please login first"
+```bash
+coderun login
+```
+
+### Error: "App name is required"
+```bash
+# Add the --name flag
+coderun deploy nginx:latest --name my-application
+```
+
+### Error: "Cannot specify both --http-port and --tcp-port"
+```bash
+# Use only one of them
+coderun deploy my-app:latest --name app --http-port 8080
+# Or
+coderun deploy my-app:latest --name app --tcp-port 9000
+```
+
+## 📦 Releases
+
+Releases are automatically generated when a tag is created in the repository:
+
+```bash
+git tag v0.0.1
+git push origin v0.0.1
+```
+
+This automatically triggers compilation for all platforms and creates a release on GitHub.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+[Add license information]
+
+## 🔗 Links
+
+- [Complete documentation](https://docs.helmcode.com)
+- [Report bugs](https://github.com/helmcode/coderun-cli/issues)
+- [Request features](https://github.com/helmcode/coderun-cli/issues)
