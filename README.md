@@ -228,7 +228,7 @@ This automatically triggers compilation for all platforms and creates a release 
 
 ## 📄 License
 
-[Add license information]
+[Apache License 2.0](https://github.com/helmcode/coderun-cli/blob/main/LICENSE)
 
 ## 🔗 Links
 
