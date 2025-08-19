@@ -111,3 +111,24 @@ type DeploymentLogsResponse struct {
 	Error        string             `json:"error,omitempty"`
 	Logs         map[string]PodLogs `json:"logs"`
 }
+
+// BuildRequest represents a build request (used for uploading context)
+type BuildRequest struct {
+	AppName        string `json:"app_name"`
+	DockerfilePath string `json:"dockerfile_path"`
+}
+
+// BuildResponse represents a build response
+type BuildResponse struct {
+	ID             string     `json:"id"`
+	ClientID       string     `json:"client_id"`
+	AppName        string     `json:"app_name"`
+	Tag            string     `json:"tag"`
+	Status         string     `json:"status"`
+	ImageURI       string     `json:"image_uri"`
+	DockerfilePath string     `json:"dockerfile_path"`
+	K8sJobName     string     `json:"k8s_job_name"`
+	CreatedAt      time.Time  `json:"created_at"`
+	StartedAt      *time.Time `json:"started_at"`
+	FinishedAt     *time.Time `json:"finished_at"`
+}

@@ -5,6 +5,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/helmcode/coderun-cli/internal/client"
 	"github.com/helmcode/coderun-cli/internal/utils"
@@ -13,24 +14,36 @@ import (
 
 // deployCmd represents the deploy command
 var deployCmd = &cobra.Command{
-	Use:   "deploy IMAGE",
-	Short: "Deploy a Docker container",
-	Long: `Deploy a Docker container to the CodeRun platform.
+	Use:   "deploy [IMAGE]",
+	Short: "Deploy a Docker container or build from source",
+	Long: `Deploy a Docker container to the CodeRun platform or build from source.
 
-Examples:
+Deploy from existing image:
   coderun deploy nginx:latest --name my-nginx
   coderun deploy my-app:v1.0 --name my-app --replicas 3 --cpu 500m --memory 1Gi
   coderun deploy my-app:latest --name web-app --http-port 8080 --env-file .env
   coderun deploy redis:latest --name my-redis --tcp-port 6379
   coderun deploy postgres:latest --name my-db --tcp-port 5432 --env-file database.env
   coderun deploy my-app:latest --name prod-app --replicas 2 --cpu 200m --memory 512Mi --http-port 3000 --env-file production.env
+
+Build from source:
+  coderun deploy --build . --name my-app
+  coderun deploy --build ./my-app --name my-app --dockerfile Dockerfile.prod
+  coderun deploy --build . --name web-app --http-port 8080 --env-file .env
   
-  # With persistent storage (automatically forces replicas to 1):
+With persistent storage (automatically forces replicas to 1):
   coderun deploy postgres:15 --name my-postgres --tcp-port 5432 --storage-size 5Gi --storage-path /var/lib/postgresql/data
   coderun deploy mysql:8 --name my-mysql --tcp-port 3306 --storage-size 10Gi --storage-path /var/lib/mysql
   coderun deploy nginx:latest --name web-server --http-port 80 --storage-size 1Gi --storage-path /usr/share/nginx/html`,
-	Args: cobra.ExactArgs(1),
-	Run:  runDeploy,
+	Args: func(cmd *cobra.Command, args []string) error {
+		// If --build is specified, IMAGE argument is optional
+		if buildContext != "" {
+			return cobra.MaximumNArgs(0)(cmd, args)
+		}
+		// Otherwise, IMAGE argument is required
+		return cobra.ExactArgs(1)(cmd, args)
+	},
+	Run: runDeploy,
 }
 
 var (
@@ -43,6 +56,9 @@ var (
 	appName                   string
 	persistentVolumeSize      string
 	persistentVolumeMountPath string
+	// Build flags
+	buildContext   string
+	dockerfilePath string
 )
 
 func init() {
@@ -60,6 +76,10 @@ func init() {
 	// Persistent storage flags
 	deployCmd.Flags().StringVar(&persistentVolumeSize, "storage-size", "", "Size of persistent volume (e.g., '1Gi', '500Mi', '10Gi')")
 	deployCmd.Flags().StringVar(&persistentVolumeMountPath, "storage-path", "", "Path where to mount the volume (e.g., '/data', '/var/lib/mysql')")
+
+	// Build flags
+	deployCmd.Flags().StringVar(&buildContext, "build", "", "Build from source. Specify the build context directory (e.g., './my-app' or '.')")
+	deployCmd.Flags().StringVar(&dockerfilePath, "dockerfile", "Dockerfile", "Path to Dockerfile relative to build context (default: 'Dockerfile')")
 }
 
 // parseValidationError tries to parse backend validation errors and return user-friendly messages
@@ -133,7 +153,18 @@ func parseValidationError(errorMsg string) string {
 }
 
 func runDeploy(cmd *cobra.Command, args []string) {
-	image := args[0]
+	var image string
+
+	// Determine if we're building from source or deploying an existing image
+	isBuild := buildContext != ""
+
+	if !isBuild {
+		if len(args) == 0 {
+			fmt.Println("Either specify an IMAGE to deploy or use --build to build from source")
+			os.Exit(1)
+		}
+		image = args[0]
+	}
 
 	// Load config
 	config, err := utils.LoadConfig()
@@ -244,6 +275,74 @@ func runDeploy(cmd *cobra.Command, args []string) {
 		fmt.Printf("Loaded %d environment variables from %s\n", len(envVars), envFile)
 	}
 
+	// Create client
+	apiClient := client.NewClient(config.BaseURL)
+	apiClient.SetToken(config.AccessToken)
+
+	// Handle build from source
+	if isBuild {
+		fmt.Printf("Building from source in %s...\n", buildContext)
+
+		// Validate build context
+		if _, err := os.Stat(buildContext); os.IsNotExist(err) {
+			fmt.Printf("Build context directory does not exist: %s\n", buildContext)
+			os.Exit(1)
+		}
+
+		// Validate Dockerfile
+		if err := utils.ValidateDockerfile(buildContext, dockerfilePath); err != nil {
+			fmt.Printf("Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Create build context archive
+		contextArchivePath := utils.GenerateBuildContextPath(appName)
+		defer os.Remove(contextArchivePath) // Clean up
+
+		fmt.Printf("Creating build context archive...\n")
+		if err := utils.CreateBuildContext(buildContext, contextArchivePath); err != nil {
+			fmt.Printf("Error creating build context: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Upload and start build
+		fmt.Printf("Uploading build context and starting build...\n")
+		buildResp, err := apiClient.CreateBuild(contextArchivePath, appName, dockerfilePath)
+		if err != nil {
+			userFriendlyError := parseValidationError(err.Error())
+			fmt.Printf("Build failed: %s\n", userFriendlyError)
+			os.Exit(1)
+		}
+
+		fmt.Printf("✅ Build started successfully!\n")
+		fmt.Printf("Build ID: %s\n", buildResp.ID)
+		fmt.Printf("Status: %s\n", buildResp.Status)
+		fmt.Printf("Image URI: %s\n", buildResp.ImageURI)
+
+		// Wait for build to complete
+		fmt.Printf("Waiting for build to complete...\n")
+		for {
+			time.Sleep(5 * time.Second)
+
+			status, err := apiClient.GetBuildStatus(buildResp.ID)
+			if err != nil {
+				fmt.Printf("Error checking build status: %v\n", err)
+				os.Exit(1)
+			}
+
+			fmt.Printf("Build status: %s\n", status.Status)
+
+			if status.Status == "completed" {
+				fmt.Printf("✅ Build completed successfully!\n")
+				image = status.ImageURI
+				break
+			} else if status.Status == "failed" {
+				fmt.Printf("❌ Build failed!\n")
+				os.Exit(1)
+			}
+		}
+	}
+
 	// Create deployment request
 	deployReq := client.DeploymentCreate{
 		AppName:         appName,
@@ -270,17 +369,20 @@ func runDeploy(cmd *cobra.Command, args []string) {
 		deployReq.TCPPort = &tcpPort
 	}
 
-	// Create client and deploy
-	apiClient := client.NewClient(config.BaseURL)
-	apiClient.SetToken(config.AccessToken)
+	// Deploy the application
+	if isBuild {
+		fmt.Printf("Deploying built image %s...\n", image)
+	} else {
+		fmt.Printf("Deploying %s...\n", image)
+	}
 
-	fmt.Printf("Deploying %s...\n", image)
 	if httpPort > 0 {
 		fmt.Println("ℹ️  Note: Deploy with HTTP port may take several minutes (waiting for TLS certificate)")
 	}
 	if tcpPort > 0 {
 		fmt.Println("ℹ️  Note: Deploy with TCP port will be available in the NodePort range (30000-32767)")
 	}
+
 	deployment, err := apiClient.CreateDeployment(&deployReq)
 	if err != nil {
 		userFriendlyError := parseValidationError(err.Error())
@@ -318,4 +420,8 @@ func runDeploy(cmd *cobra.Command, args []string) {
 
 	fmt.Printf("Status: %s\n", deployment.Status)
 	fmt.Printf("Created: %s\n", deployment.CreatedAt.Format("2006-01-02 15:04:05"))
+
+	if isBuild {
+		fmt.Println("\n🚀 Successfully built and deployed from source!")
+	}
 }
