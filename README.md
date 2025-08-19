@@ -226,12 +226,18 @@ This automatically triggers compilation for all platforms and creates a release 
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## 📁 Complete documentation
+1. [Intro](https://gist.github.com/sre-helmcode/8b67790107fa890ce078696edb5967e0#file-intro-md)
+2. [Basic Usage](https://gist.github.com/sre-helmcode/8b67790107fa890ce078696edb5967e0#file-basic_usage-md)
+3. [Basic Deploy](https://gist.github.com/sre-helmcode/8b67790107fa890ce078696edb5967e0#file-basic_deploy-md)
+4. [Advanced Deploy](https://gist.github.com/sre-helmcode/8b67790107fa890ce078696edb5967e0#file-advanced_deploy-md)
+5. [Debugging](https://gist.github.com/sre-helmcode/8b67790107fa890ce078696edb5967e0#file-debug-md)
+
 ## 📄 License
 
 [Apache License 2.0](https://github.com/helmcode/coderun-cli/blob/main/LICENSE)
 
 ## 🔗 Links
 
-- [Complete documentation](https://docs.helmcode.com)
 - [Report bugs](https://github.com/helmcode/coderun-cli/issues)
 - [Request features](https://github.com/helmcode/coderun-cli/issues)
