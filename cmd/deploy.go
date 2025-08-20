@@ -20,17 +20,14 @@ var deployCmd = &cobra.Command{
 
 Deploy from existing image:
   coderun deploy nginx:latest --name my-nginx
-  coderun deploy my-app:v1.0 --name my-app --replicas 3 --cpu 500m --memory 1Gi
-  coderun deploy my-app:latest --name web-app --http-port 8080 --env-file .env
   coderun deploy redis:latest --name my-redis --tcp-port 6379
-  coderun deploy postgres:latest --name my-db --tcp-port 5432 --env-file database.env
   coderun deploy my-app:latest --name prod-app --replicas 2 --cpu 200m --memory 512Mi --http-port 3000 --env-file production.env
 
 Build from source:
   coderun deploy --build . --name my-app
   coderun deploy --build ./my-app --name my-app --dockerfile Dockerfile.prod
   coderun deploy --build . --name web-app --http-port 8080 --env-file .env
-  
+
 With persistent storage (automatically forces replicas to 1):
   coderun deploy postgres:15 --name my-postgres --tcp-port 5432 --storage-size 5Gi --storage-path /var/lib/postgresql/data
   coderun deploy mysql:8 --name my-mysql --tcp-port 3306 --storage-size 10Gi --storage-path /var/lib/mysql
@@ -334,10 +331,38 @@ func runDeploy(cmd *cobra.Command, args []string) {
 
 			if status.Status == "completed" {
 				fmt.Printf("✅ Build completed successfully!\n")
+
+				// Show build logs for successful builds too
+				fmt.Println("\n📋 Build logs:")
+				fmt.Println("================")
+				logs, err := apiClient.GetBuildLogs(status.ID)
+				if err != nil {
+					fmt.Printf("❌ Could not retrieve build logs: %v\n", err)
+				} else if logs == "" {
+					fmt.Println("No logs available")
+				} else {
+					fmt.Println(logs)
+				}
+				fmt.Println("================\n")
+
 				image = status.ImageURI
 				break
 			} else if status.Status == "failed" {
 				fmt.Printf("❌ Build failed!\n")
+
+				// Try to get build logs to show the error
+				fmt.Println("\n📋 Build logs:")
+				fmt.Println("================")
+				logs, err := apiClient.GetBuildLogs(status.ID)
+				if err != nil {
+					fmt.Printf("❌ Could not retrieve build logs: %v\n", err)
+				} else if logs == "" {
+					fmt.Println("No logs available")
+				} else {
+					fmt.Println(logs)
+				}
+				fmt.Println("================")
+
 				os.Exit(1)
 			}
 		}
@@ -413,6 +438,9 @@ func runDeploy(cmd *cobra.Command, args []string) {
 	}
 	if deployment.TCPConnection != nil {
 		fmt.Printf("TCP Connection: %s\n", *deployment.TCPConnection)
+	}
+	if deployment.URL != nil {
+		fmt.Printf("HTTP URL: %s\n", *deployment.URL)
 	}
 	if len(deployment.EnvironmentVars) > 0 {
 		fmt.Printf("Environment Variables: %d\n", len(deployment.EnvironmentVars))

@@ -15,7 +15,7 @@ func SetVersionInfo(version string) {
 var rootCmd = &cobra.Command{
 	Use:   "coderun",
 	Short: "CodeRun Container-as-a-Service CLI",
-	Long: `CodeRun CLI allows you to deploy and manage Docker containers 
+	Long: `CodeRun CLI allows you to deploy and manage Docker containers
 in a Kubernetes cluster with ease. Deploy your applications with simple commands.
 
 Examples:

@@ -99,3 +99,25 @@ func (c *Client) GetBuildStatus(buildID string) (*BuildResponse, error) {
 
 	return &buildResp, nil
 }
+
+// GetBuildLogs gets build logs by ID
+func (c *Client) GetBuildLogs(buildID string) (string, error) {
+	resp, err := c.makeRequest("GET", "/api/v1/builds/"+buildID+"/logs", nil)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", handleAPIError(resp)
+	}
+
+	var logResp struct {
+		Logs string `json:"logs"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&logResp); err != nil {
+		return "", fmt.Errorf("failed to decode build logs: %w", err)
+	}
+
+	return logResp.Logs, nil
+}
