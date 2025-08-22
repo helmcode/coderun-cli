@@ -232,6 +232,7 @@ This automatically triggers compilation for all platforms and creates a release 
 3. [Basic Deploy](https://gist.github.com/sre-helmcode/8b67790107fa890ce078696edb5967e0#file-basic_deploy-md)
 4. [Advanced Deploy](https://gist.github.com/sre-helmcode/8b67790107fa890ce078696edb5967e0#file-advanced_deploy-md)
 5. [Debugging](https://gist.github.com/sre-helmcode/8b67790107fa890ce078696edb5967e0#file-debug-md)
+6. [Build and Deploy from a Dockerfile](https://gist.github.com/sre-helmcode/8b67790107fa890ce078696edb5967e0#file-build_and_deploy-md)
 
 ## 📄 License
 
